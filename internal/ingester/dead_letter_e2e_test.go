@@ -1,6 +1,6 @@
 //go:build integration
 
-package ingester
+package ingester_test
 
 import (
 	"context"

@@ -283,6 +283,29 @@ func (c *ClickHouse) CountContracts(context.Context, ContractsFilter) (int64, er
 	return 0, nil
 }
 
+// API keys are not implemented for the ClickHouse backend: it is used as a
+// read-side analytics mirror behind the Postgres-backed API, which owns
+// authentication.
+func (c *ClickHouse) CreateAPIKey(context.Context, APIKey) (APIKey, error) {
+	return APIKey{}, fmt.Errorf("CreateAPIKey: not supported by the clickhouse backend")
+}
+
+func (c *ClickHouse) GetAPIKey(context.Context, int64) (APIKey, error) {
+	return APIKey{}, fmt.Errorf("GetAPIKey: not supported by the clickhouse backend")
+}
+
+func (c *ClickHouse) LookupAPIKeyByPrefix(context.Context, string) (APIKey, error) {
+	return APIKey{}, fmt.Errorf("LookupAPIKeyByPrefix: not supported by the clickhouse backend")
+}
+
+func (c *ClickHouse) ListAPIKeys(context.Context) ([]APIKey, error) {
+	return nil, fmt.Errorf("ListAPIKeys: not supported by the clickhouse backend")
+}
+
+func (c *ClickHouse) RevokeAPIKey(context.Context, int64) error {
+	return fmt.Errorf("RevokeAPIKey: not supported by the clickhouse backend")
+}
+
 // DeleteEventsBefore is a stub: retention pruning is not implemented for
 // the ClickHouse backend yet.
 func (c *ClickHouse) DeleteEventsBefore(context.Context, int64, time.Time, int) (int64, error) {
