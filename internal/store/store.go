@@ -618,6 +618,7 @@ type APIKey struct {
 
 // Revoked reports whether the key has been revoked.
 func (k APIKey) Revoked() bool { return k.RevokedAt != nil }
+
 // IsAll reports whether the owner filter is unrestricted.
 func (o SubscriptionOwner) IsAll() bool { return o.all }
 

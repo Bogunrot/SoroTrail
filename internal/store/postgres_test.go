@@ -393,9 +393,6 @@ func TestQueryEvents_FiltersAndPagination(t *testing.T) {
 			}
 			cursor = next
 		}
-		// 12 rows total: the 10 seeded above plus e1/e2 inserted by the
-		// "by topic0 and topic1 positionally" subtest.
-		require.Len(t, all, 12)
 		// Count what is actually in the table rather than hardcoding it:
 		// sibling subtests above insert rows of their own, so a literal
 		// makes this assertion depend on subtest execution order.
@@ -466,7 +463,6 @@ func TestQueryEvents_FiltersAndPagination(t *testing.T) {
 			}
 			cursor = next
 		}
-		require.Len(t, all, 12) // 10 seeded + e1/e2 from the positional subtest
 		require.Len(t, all, countEventsInRange(t, st, 101, 110))
 		for i := 1; i < len(all); i++ {
 			assert.Greater(t, all[i-1].ID, all[i].ID, "descending ID order across pages")

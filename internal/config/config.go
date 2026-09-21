@@ -217,9 +217,9 @@ type Config struct {
 	// authentication"). Defaults to false so existing deployments see no
 	// behavior change. Keys are created/revoked via `sorotrail apikey`
 	// or the /apikeys endpoints.
-	APIKeyAuthEnabled bool `env:"API_KEY_AUTH_ENABLED" envDefault:"false"`
-	HourlyQuota           int64   `env:"HOURLY_QUOTA"`
-	DailyQuota            int64   `env:"DAILY_QUOTA"`
+	APIKeyAuthEnabled bool  `env:"API_KEY_AUTH_ENABLED" envDefault:"false"`
+	HourlyQuota       int64 `env:"HOURLY_QUOTA"`
+	DailyQuota        int64 `env:"DAILY_QUOTA"`
 
 	// CompressMinSize is the response body size, in bytes, at or above which
 	// responses are gzip/deflate encoded for clients that advertise support.
