@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  test-matrix:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -68,8 +68,29 @@ jobs:
       - name: Verify Benchmarks (compilation and short run)
         run: make bench-ci
 
+  # Branch protection on main requires a status check named `test`. A matrix
+  # job never reports that name — it reports `test (15)` and `test (16)` —
+  # so the required context stayed permanently "Expected — Waiting for
+  # status to be reported" and no pull request could ever merge on its own
+  # merits. This aggregate reports the name protection asks for and passes
+  # only when every matrix leg passed, so the rule keeps working if the
+  # matrix later gains or drops a Postgres version.
+  test:
+    runs-on: ubuntu-latest
+    needs: test-matrix
+    if: always()
+    steps:
+      - name: Report matrix result
+        run: |
+          result='${{ needs.test-matrix.result }}'
+          echo "test-matrix result: $result"
+          if [ "$result" != "success" ]; then
+            echo "::error::one or more test-matrix legs did not succeed"
+            exit 1
+          fi
+
   # Issue #9: separate CI job for the integration test layer gated behind
-  # the `integration` build tag. Same Postgres service as the `test` job;
+  # the `integration` build tag. Same Postgres service as the `test-matrix` job;
   # `-p 1` is required because internal/store and internal/replay
   # integration tests share the database and truncate the same tables.
   integration:
@@ -139,7 +160,7 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
-    needs: test
+    needs: test-matrix
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
