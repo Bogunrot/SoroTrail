@@ -346,12 +346,19 @@ type Ingester struct {
 	// mutex/atomic or document that the new caller is also single-
 	// threaded relative to Run().
 	lagging bool
-	// pollInterval is the current effective adaptive poll interval, in
-	// nanoseconds (time.Duration's underlying unit). It is initialized in
-	// New to the post-defaults Options.PollInterval and thereafter
-	// mutated only by adjustPollInterval from the Run goroutine; the
-	// atomic makes it safe for EffectivePollInterval to be read
-	// concurrently from the /stats HTTP handler goroutine.
+	// pollInterval is the current effective poll interval, in nanoseconds
+	// (time.Duration's underlying unit). It is initialized in New to the
+	// post-defaults Options.PollInterval and thereafter mutated either by
+	// adjustPollInterval from the Run goroutine (adaptive adjustment: once
+	// caught up with the chain, the effective interval shrinks toward the
+	// min when backlog was just observed and grows toward the max on idle
+	// cycles) or by SetPollInterval from any other goroutine (e.g. a
+	// SIGHUP config-reload handler). The atomic makes both writers and
+	// readers — EffectivePollInterval from the /stats HTTP handler
+	// goroutine, and Run's idle sleep, which reads the current value
+	// fresh on every cycle — safe without a lock. opts.PollInterval
+	// itself is left untouched and only reflects the value the Ingester
+	// was constructed with.
 	pollInterval atomic.Int64
 	bcast        *broadcast.Broadcaster
 	// notifier fans ingested events out to subscribers; optional, nil
@@ -361,14 +368,6 @@ type Ingester struct {
 	// a poison event no longer stalls the loop. nil means no
 	// dead-lettering — the cycle aborts on the first error as before.
 	deadLetterStore DeadLetterSink
-	// pollInterval is the live-adjustable poll interval, stored as
-	// nanoseconds so SetPollInterval can update it from any goroutine
-	// (e.g. a SIGHUP config-reload handler) without a lock, while Run's
-	// idle sleep reads the current value fresh on every cycle via
-	// PollInterval. Seeded from opts.PollInterval in New; opts.PollInterval
-	// itself is left untouched and only reflects the value the Ingester
-	// was constructed with.
-	pollInterval atomic.Int64
 }
 
 type networkStateStore interface {

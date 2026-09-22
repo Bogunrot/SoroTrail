@@ -37,12 +37,6 @@ func (s *stubResolver) FetchWasmHash(_ context.Context, contractID string) (stri
 	return "", errors.New("unknown contract")
 }
 
-// countFetcher counts FetchSpec calls to prove caching avoids refetches.
-type countFetcher struct {
-	Fetcher
-	calls int
-}
-
 func newTestSpec(wasmHash, contractID string) *ContractSpec {
 	return &ContractSpec{
 		WasmHash:   wasmHash,
@@ -65,6 +59,9 @@ func (s *stubSpecStore) GetContractSpec(_ context.Context, wasmHash string) ([]b
 }
 
 func (s *stubSpecStore) SetContractSpec(_ context.Context, wasmHash, _ string, specJSON []byte) error {
+	if s.specs == nil {
+		s.specs = make(map[string][]byte)
+	}
 	s.specs[wasmHash] = specJSON
 	return nil
 }

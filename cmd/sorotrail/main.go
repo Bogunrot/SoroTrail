@@ -98,22 +98,20 @@ func usage() {
 With no subcommand, runs the indexer (ingester + HTTP API).
 
 subcommands:
-  replay    re-decode stored events with the current decoder
-            (sorotrail replay --help)
-  apikey    issue, list, and revoke API keys
-            (sorotrail apikey --help)
-  replay       re-decode stored events with the current decoder
-               (sorotrail replay --help)
-  backfill     ingest historical contract events from Horizon
-               (sorotrail backfill --help)
+  replay           re-decode stored events with the current decoder
+                   (sorotrail replay --help)
+  apikey           issue, list, and revoke API keys
+                   (sorotrail apikey --help)
+  backfill         ingest historical contract events from Horizon
+                   (sorotrail backfill --help)
   index-addresses  rebuild the address→event inverted index from stored events
-               (sorotrail index-addresses --help)
-  healthcheck  probe /health and exit (used by docker HEALTHCHECK)
-               (sorotrail healthcheck --help)
-  schema-inspect  report migration state, partitions, and table sizes
-               (sorotrail schema-inspect --help)
-  migrate-status report pending migrations without applying them
-               (sorotrail migrate-status --help)
+                   (sorotrail index-addresses --help)
+  healthcheck      probe /health and exit (used by docker HEALTHCHECK)
+                   (sorotrail healthcheck --help)
+  schema-inspect   report migration state, partitions, and table sizes
+                   (sorotrail schema-inspect --help)
+  migrate-status   report pending migrations without applying them
+                   (sorotrail migrate-status --help)
 `)
 }
 
@@ -464,7 +462,7 @@ func run() error {
 	apiServer.SetGraphQLHandler(gqlHandler, gqlHandler.PlaygroundHandler())
 
 	if cfg.MultiTenant {
-		// Tenancy lives in tables (tenants, grants, api_keys, usage) that
+		// Tenancy lives in tables (tenants, grants, tenant_api_keys, usage) that
 		// only the Postgres backend has. Refusing at startup is the whole
 		// point: silently running a ClickHouse deployment with MULTI_TENANT
 		// set would mean an operator believing a boundary is enforced when
@@ -630,7 +628,7 @@ func bootstrapAdminKey(ctx context.Context, ts store.TenantStore, key string, lo
 	if err != nil {
 		return fmt.Errorf("loading default tenant: %w", err)
 	}
-	err = ts.CreateAPIKeyIfAbsent(ctx, tenant.ID, "bootstrap", prefix, digest)
+	err = ts.CreateTenantAPIKeyIfAbsent(ctx, tenant.ID, "bootstrap", prefix, digest)
 	if err != nil {
 		return fmt.Errorf("installing bootstrap key: %w", err)
 	}
