@@ -962,7 +962,7 @@ func TestMigrate_UpgradesLegacyEventsTable(t *testing.T) {
 	_, err = pool.Exec(ctx, `
 		INSERT INTO events (
 			id, contract_id, ledger, type, tx_hash, tx_index, op_index,
-			in_successful_call, topics, value, created_at, topics_xdr, value_xdr
+			in_successful_call, topics, value, created_at, raw_topic_xdr, raw_value_xdr
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
 		)`,
@@ -981,15 +981,18 @@ func TestMigrate_UpgradesLegacyEventsTable(t *testing.T) {
 	assert.Equal(t, original.RawTopicXDR, got.RawTopicXDR)
 	assert.Equal(t, original.RawValueXDR, got.RawValueXDR)
 
-	// The partition migration bakes in the default span (120960 ledgers),
-	// so ledger 100 lands in the events_0_120959 partition.
-	partitions, err := pool.Query(ctx, `SELECT to_regclass('events_0_120959'), to_regclass('events_100_109')`)
+	// 0007 deliberately routes the migrated rows into a DEFAULT partition
+	// rather than a span-based child: a hard-coded span=120960 child would
+	// later overlap the narrow children ensure_event_partitions creates at
+	// whatever span the operator configured. So ledger 100 lands in
+	// events_default, and no range child covers it.
+	partitions, err := pool.Query(ctx, `SELECT to_regclass('events_default'), to_regclass('events_100_109')`)
 	require.NoError(t, err)
 	defer partitions.Close()
 	require.True(t, partitions.Next())
-	var defaultSpanPartition, tinySpanPartition sql.NullString
-	require.NoError(t, partitions.Scan(&defaultSpanPartition, &tinySpanPartition))
-	assert.True(t, defaultSpanPartition.Valid, "ledger 100 must be inside the default-span partition")
+	var defaultPartition, tinySpanPartition sql.NullString
+	require.NoError(t, partitions.Scan(&defaultPartition, &tinySpanPartition))
+	assert.True(t, defaultPartition.Valid, "the migration routes migrated rows into the events_default catch-all")
 	assert.False(t, tinySpanPartition.Valid, "the migration does not use the store's test partition span")
 	// 0008's events_default catch-all now holds the migrated row (ledger
 	// 100). Exercise the runtime partition router (this test was created

@@ -1278,7 +1278,7 @@ func (s *SQLite) RecordDeliveryAttempt(ctx context.Context, a DeliveryAttempt) (
 		VALUES (?, ?, ?, ?, ?, ?)
 		RETURNING id, created_at`,
 		a.SubscriptionID, a.EventID, a.Status, a.ResponseCode,
-		a.DurationMs, nullableText(a.Error),
+		a.DurationMs, a.Error, // NOT NULL DEFAULT ''; empty means success, never NULL
 	).Scan(&a.ID, &a.CreatedAt)
 	if err != nil {
 		return DeliveryAttempt{}, fmt.Errorf("recording delivery attempt: %w", err)
