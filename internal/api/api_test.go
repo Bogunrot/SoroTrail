@@ -391,6 +391,22 @@ func (s *stubStore) UpsertEvents(context.Context, []store.Event) (int64, error) 
 	return 0, nil
 }
 
+func (s *stubStore) CreateAPIKey(context.Context, store.APIKey) (store.APIKey, error) {
+	return store.APIKey{}, nil
+}
+func (s *stubStore) GetAPIKey(context.Context, int64) (store.APIKey, error) {
+	return store.APIKey{}, nil
+}
+func (s *stubStore) LookupAPIKeyByPrefix(context.Context, string) (store.APIKey, error) {
+	return store.APIKey{}, nil
+}
+func (s *stubStore) ListAPIKeys(context.Context) ([]store.APIKey, error) {
+	return nil, nil
+}
+func (s *stubStore) RevokeAPIKey(context.Context, int64) error {
+	return nil
+}
+
 func (s *stubStore) GetContractCursor(_ context.Context, contractID string) (store.ContractCursor, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -3010,7 +3026,7 @@ func TestListEvents_EnrichedResponseSurfaceDecodeError(t *testing.T) {
 		Topics: json.RawMessage(`[{"symbol":"transfer"}]`),
 		Value:  json.RawMessage(`{"i128":"5000"}`),
 	}}}
-	s := New(st, nil, slog.New(slog.NewTextHandler(io.Discard, nil)),
+	s := New(st, nil, slog.New(slog.NewTextHandler(io.Discard, nil)), "",
 		&mockEnricher{enriched: []store.EnrichedEvent{{
 			Event: store.Event{
 				ID:     "0001-0001",
@@ -3044,7 +3060,7 @@ func TestListEvents_EnrichedResponseSurfaceDecodeError(t *testing.T) {
 func TestStats_SurfaceDecodeMetrics(t *testing.T) {
 	st := &stubStore{stats: store.Stats{LastIngestedLedger: 512}}
 	s := New(st, &stubRPC{health: rpc.Health{Status: "healthy", LatestLedger: 1024}},
-		slog.New(slog.NewTextHandler(io.Discard, nil)),
+		slog.New(slog.NewTextHandler(io.Discard, nil)), "",
 		&mockEnricher{stats: store.DecodeStats{Decodes: 100, DecodeFailures: 3}})
 
 	resp, body := doGet(t, s, "/stats")

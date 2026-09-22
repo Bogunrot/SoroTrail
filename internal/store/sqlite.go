@@ -1278,7 +1278,7 @@ func (s *SQLite) RecordDeliveryAttempt(ctx context.Context, a DeliveryAttempt) (
 		VALUES (?, ?, ?, ?, ?, ?)
 		RETURNING id, created_at`,
 		a.SubscriptionID, a.EventID, a.Status, a.ResponseCode,
-		a.DurationMs, nullableText(a.Error),
+		a.DurationMs, a.Error, // NOT NULL DEFAULT ''; empty means success, never NULL
 	).Scan(&a.ID, &a.CreatedAt)
 	if err != nil {
 		return DeliveryAttempt{}, fmt.Errorf("recording delivery attempt: %w", err)
@@ -1563,6 +1563,29 @@ func (s *SQLite) ListContractsNeedingRefresh(context.Context, time.Time) ([]stri
 
 // ListContracts is not implemented for the SQLite backend: the contract
 // inventory endpoint is Postgres-only.
+
+// API keys are not implemented for the SQLite backend: single-node
+// deployments authenticate via the operator's own reverse proxy or run
+// without the HTTP API's key check entirely.
+func (s *SQLite) CreateAPIKey(context.Context, APIKey) (APIKey, error) {
+	return APIKey{}, fmt.Errorf("CreateAPIKey: not supported by the sqlite backend")
+}
+
+func (s *SQLite) GetAPIKey(context.Context, int64) (APIKey, error) {
+	return APIKey{}, fmt.Errorf("GetAPIKey: not supported by the sqlite backend")
+}
+
+func (s *SQLite) LookupAPIKeyByPrefix(context.Context, string) (APIKey, error) {
+	return APIKey{}, fmt.Errorf("LookupAPIKeyByPrefix: not supported by the sqlite backend")
+}
+
+func (s *SQLite) ListAPIKeys(context.Context) ([]APIKey, error) {
+	return nil, fmt.Errorf("ListAPIKeys: not supported by the sqlite backend")
+}
+
+func (s *SQLite) RevokeAPIKey(context.Context, int64) error {
+	return fmt.Errorf("RevokeAPIKey: not supported by the sqlite backend")
+}
 
 // GetContractSummary is not implemented for the SQLite backend.
 func (s *SQLite) GetContractSummary(ctx context.Context, contractID string) (ContractSummary, error) {

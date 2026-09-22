@@ -618,6 +618,7 @@ type APIKey struct {
 
 // Revoked reports whether the key has been revoked.
 func (k APIKey) Revoked() bool { return k.RevokedAt != nil }
+
 // IsAll reports whether the owner filter is unrestricted.
 func (o SubscriptionOwner) IsAll() bool { return o.all }
 
@@ -703,15 +704,6 @@ type Stats struct {
 	// Decode counters are populated only when a spec enricher is wired;
 	// omitted from JSON when it is nil (decoded=true is unavailable).
 	Decode *DecodeStats `json:"decode,omitempty"`
-}
-
-// DecodeStats is a JSON-friendly view of spec-enrichment decode counters,
-// surfaced via /stats so the decode failure rate is observable. Failures over
-// Decodes is the per-frame decode failure rate: when the enricher is disabled
-// the field stays nil and is omitted from JSON.
-type DecodeStats struct {
-	Decodes        uint64 `json:"decodes"`
-	DecodeFailures uint64 `json:"decode_failures"`
 	// Spec-cache counters are populated only when the API layer is given
 	// a spec cache; omitted from JSON otherwise.
 	SpecCache SpecCacheStats `json:"spec_cache,omitempty"`
@@ -722,6 +714,15 @@ type DecodeStats struct {
 	// only when an ingester is wired via api.SetIngester, omitted from
 	// JSON otherwise.
 	Ingester IngesterStats `json:"ingester,omitempty"`
+}
+
+// DecodeStats is a JSON-friendly view of spec-enrichment decode counters,
+// surfaced via /stats so the decode failure rate is observable. Failures over
+// Decodes is the per-frame decode failure rate: when the enricher is disabled
+// the field stays nil and is omitted from JSON.
+type DecodeStats struct {
+	Decodes        uint64 `json:"decodes"`
+	DecodeFailures uint64 `json:"decode_failures"`
 }
 
 // SpecCacheStats is a JSON-friendly view of spec.CacheStats. Defined here

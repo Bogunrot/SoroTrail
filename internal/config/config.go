@@ -80,17 +80,14 @@ type Config struct {
 	// deployment that only sets POLL_INTERVAL, so existing deployments
 	// keep their exact pre-#146 fixed-interval behavior unless they
 	// opt in by setting these explicitly.
-	PollIntervalMin       time.Duration `env:"POLL_INTERVAL_MIN"`
-	PollIntervalMax       time.Duration `env:"POLL_INTERVAL_MAX"`
-	RPCRateLimit float64 `env:"RPC_RATE_LIMIT" envDefault:"10"`
-	DatabaseURL  string  `env:"DATABASE_URL"`
+	PollIntervalMin time.Duration `env:"POLL_INTERVAL_MIN"`
+	PollIntervalMax time.Duration `env:"POLL_INTERVAL_MAX"`
 	// DB pool sizing. Zero means "use the pgx default". These let an operator
 	// bound the Postgres connection pool without a code redeploy.
 	DBMaxConns        int32         `env:"DB_MAX_CONNS" envDefault:"0"`
 	DBMinConns        int32         `env:"DB_MIN_CONNS" envDefault:"0"`
 	DBMaxConnLifetime time.Duration `env:"DB_MAX_CONN_LIFETIME" envDefault:"0"`
 	DBMaxConnIdleTime time.Duration `env:"DB_MAX_CONN_IDLE_TIME" envDefault:"0"`
-	PollInterval      time.Duration `env:"POLL_INTERVAL" envDefault:"5s"`
 	// HTTPAddr is the address the HTTP server listens on (host:port), e.g.
 	// ":8080" or "0.0.0.0:9090". See HTTP_ADDR in .env.example. It must be a
 	// valid host:port pair.
@@ -220,9 +217,9 @@ type Config struct {
 	// authentication"). Defaults to false so existing deployments see no
 	// behavior change. Keys are created/revoked via `sorotrail apikey`
 	// or the /apikeys endpoints.
-	APIKeyAuthEnabled bool `env:"API_KEY_AUTH_ENABLED" envDefault:"false"`
-	HourlyQuota           int64   `env:"HOURLY_QUOTA"`
-	DailyQuota            int64   `env:"DAILY_QUOTA"`
+	APIKeyAuthEnabled bool  `env:"API_KEY_AUTH_ENABLED" envDefault:"false"`
+	HourlyQuota       int64 `env:"HOURLY_QUOTA"`
+	DailyQuota        int64 `env:"DAILY_QUOTA"`
 
 	// CompressMinSize is the response body size, in bytes, at or above which
 	// responses are gzip/deflate encoded for clients that advertise support.

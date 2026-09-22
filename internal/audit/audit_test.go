@@ -470,7 +470,12 @@ func TestPassOnce_SpanHierarchy(t *testing.T) {
 		}
 	}
 	require.NotNil(t, passSpan, "audit.pass span must be present")
-	assert.True(t, passSpan.EndTime.After(passSpan.StartTime))
+	// A span must not end before it starts. Equality is legitimate: on a
+	// platform with a coarse monotonic clock (Windows' is ~0.5ms) a fast
+	// pass can begin and end inside one tick, so asserting strictly-after
+	// makes this test flaky rather than stricter.
+	assert.False(t, passSpan.EndTime.Before(passSpan.StartTime),
+		"audit.pass span ends before it starts")
 
 	var reconcileSpan *tracetest.SpanStub
 	for i := range spans {
