@@ -2733,13 +2733,16 @@ components:
       name: decoded
       in: query
       description: >-
-        When "true", enrich events with spec-driven named fields. Any other
-        value leaves the response undecoded; only the exact string "true"
-        turns enrichment on. Enrichment is skipped silently when no contract
-        spec is available, so a decoded request is never an error.
+        Controls how stored event bodies are rendered. "true" enriches events
+        with spec-driven named fields; enrichment is skipped silently when no
+        contract spec is available, so a decoded request is never an error.
+        "false" is the opt-out: the stored columns are returned exactly as
+        they are, without the additive sep41_event envelope the default
+        rendering attaches. Omitting the parameter, or passing any other
+        value, keeps that default rendering.
       schema:
         type: string
-        enum: ["true"]
+        enum: ["true", "false"]
   schemas:
     APIKey:
       type: object
