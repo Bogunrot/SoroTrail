@@ -630,10 +630,13 @@ It is batched, resumable (Ctrl-C and re-run picks up where it stopped),
 idempotent, and safe to run against a live database while ingestion
 continues; a Postgres advisory lock prevents two replays at once.
 
-See 
-docs/replay.md
- for flags, the summary output, the
+See [docs/replay.md](docs/replay.md) for the end-to-end workflow — sizing
+the job, dry-running it, spot-checking a single event, running it in chunks,
+and verifying the result — plus the flag reference, the summary output, the
 advisory-lock strategy, and the derivation order for dependent tables.
+
+When something goes wrong, [docs/troubleshooting.md](docs/troubleshooting.md)
+maps the common RPC, database, API and replay errors to their fixes.
 
 ## Compression
 
@@ -756,7 +759,30 @@ Shell
 | `cursor` | `0001234...` | Opaque pagination cursor from a previous response. |
 | `order` | `desc` | `asc` \| `desc`, defaults to asc. Sort direction. |
 | `order_by` | `created_at` | `id` \| `ledger` \| `created_at`, defaults to `id`. Sort column. Anything else is a `400`. |
-| `decoded` | `true` | When `true`, enriches events with spec-driven named fields. Contracts without a spec return flagged raw data with `"decoded": false`. |
+| `decoded` | `true` | `true` \| `false`. `true` enriches events with spec-driven named fields; contracts without a spec return flagged raw data with `"decoded": false`. `false` is the opt-out — see [Opting out of decoding](#opting-out-of-decoding). |
+
+#### Opting out of decoding
+
+`?decoded=false` returns the stored event columns exactly as they are. No
+spec enrichment runs, and the additive `sep41_event` envelope the default
+rendering attaches to SEP-41 token events is omitted:
+
+```sh
+# Default: SEP-41 token events carry a normalized sep41_event envelope.
+curl -s 'localhost:8080/events?limit=1' | jq '.events[0] | keys'
+
+# Opt out: the raw stored topics/value, and nothing derived from them.
+curl -s 'localhost:8080/events?limit=1&decoded=false' | jq '.events[0] | keys'
+```
+
+Use it when you want byte-stable stored values — diffing two deployments,
+feeding a decoder of your own, or reproducing what a replay would read. The
+parameter is a three-way switch: `true` enriches, `false` opts out, and an
+absent (or unrecognised) value keeps the default rendering, so no existing
+client changes shape. It composes with `include_xdr=true`, which still
+projects `topics_xdr` / `value_xdr`, and is honoured on `/events`,
+`/events/{id}`, `/events/{id}/transaction`, and the `?stream=true` NDJSON
+path.
 
 Decode failures are surfaced, not dropped: when an event matches a spec but
 the spec-declared fields cannot be decoded (or the topics are malformed),
