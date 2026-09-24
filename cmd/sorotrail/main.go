@@ -302,6 +302,7 @@ func run() error {
 		MaxBackoff:              cfg.IngesterMaxBackoff,
 		ReorgConfirmationWindow: cfg.ReorgConfirmationWindow,
 		ReorgRescanInterval:     cfg.ReorgRescanInterval,
+		SkipContracts:           cfg.SkipContracts,
 		Network:                 cfg.Network,
 	}).WithBroadcaster(bcast)
 	ing.SetNotifier(wh)
