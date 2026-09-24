@@ -650,6 +650,48 @@ const streamBatchSize = 500
 // the value is the bare "true" (no explicit count).
 const recentDefaultLimit = 20
 
+// decodeMode is how a request wants stored event bodies rendered. It is
+// parsed from ?decoded=, which used to be read as a bare "is it the string
+// true" flag on every handler that touched it.
+type decodeMode int
+
+const (
+	// decodeStored is the default: the stored decoding, plus the additive
+	// SEP-41 envelope for events that match a token shape.
+	decodeStored decodeMode = iota
+
+	// decodeEnriched (?decoded=true) additionally resolves events against
+	// the contract spec to produce named fields.
+	decodeEnriched
+
+	// decodeRaw (?decoded=false) is the opt-out: the stored columns are
+	// served exactly as they are, with no spec enrichment and no SEP-41
+	// envelope layered on top.
+	decodeRaw
+)
+
+// decodeModeFromQuery reads ?decoded= off a request. Only the exact strings
+// "true" and "false" carry meaning; anything else (including an absent
+// parameter) keeps the default rendering, preserving the flag semantics the
+// parameter has always had for unrecognised values.
+func decodeModeFromQuery(r *http.Request) decodeMode {
+	switch r.URL.Query().Get("decoded") {
+	case "true":
+		return decodeEnriched
+	case "false":
+		return decodeRaw
+	default:
+		return decodeStored
+	}
+}
+
+// enrich reports whether spec-driven enrichment was asked for.
+func (m decodeMode) enrich() bool { return m == decodeEnriched }
+
+// sep41 reports whether the additive SEP-41 envelope should be attached.
+// Only an explicit ?decoded=false turns it off.
+func (m decodeMode) sep41() bool { return m != decodeRaw }
+
 func (s *Server) handleListEventsStream(w http.ResponseWriter, r *http.Request) {
 
 	filter, fields, err := parseFilterAndFields(r)
@@ -668,7 +710,9 @@ func (s *Server) handleListEventsStream(w http.ResponseWriter, r *http.Request) 
 
 	includeXDR := r.URL.Query().Get("include_xdr") == "true"
 
-	decoded := r.URL.Query().Get("decoded") == "true"
+	mode := decodeModeFromQuery(r)
+
+	decoded := mode.enrich()
 
 	ctx := r.Context()
 
@@ -935,11 +979,17 @@ func (s *Server) serveEvents(w http.ResponseWriter, r *http.Request, filter stor
 
 	setPaginationHeaders(w, r, cursor)
 
+	mode := decodeModeFromQuery(r)
+
 	// Tag every event with its SEP-41 normalized envelope (if any) before
 	// rendering — the layer is additive and never destructive, so events
 	// that do not match keep exactly the same shape they had before.
-	for i := range events {
-		events[i].WithSEP41()
+	// ?decoded=false opts out: the caller wants the stored columns as they
+	// are, with nothing derived layered on top.
+	if mode.sep41() {
+		for i := range events {
+			events[i].WithSEP41()
+		}
 	}
 
 	// Total matching count (ignoring pagination) as a response header.
@@ -970,7 +1020,7 @@ func (s *Server) serveEvents(w http.ResponseWriter, r *http.Request, filter stor
 
 	includeXDR := r.URL.Query().Get("include_xdr") == "true"
 
-	decoded := r.URL.Query().Get("decoded") == "true"
+	decoded := mode.enrich()
 	envelope := r.URL.Query().Get("envelope") == "true"
 	writeCacheHeaders(w, policy, immutableMaxAge, etag)
 
@@ -1184,7 +1234,9 @@ func (s *Server) handleGetEventTransaction(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	decoded := r.URL.Query().Get("decoded") == "true"
+	mode := decodeModeFromQuery(r)
+
+	decoded := mode.enrich()
 	includeXDR := r.URL.Query().Get("include_xdr") == "true"
 
 	etag := `"` + id + `:tx"`
@@ -1275,11 +1327,15 @@ func (s *Server) handleGetEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	s.recordEventsServed(r.Context(), 1)
 
-	// Additive SEP-41 normalization on the single-event path; non-matches
-	// simply omit the field.
-	event.WithSEP41()
+	mode := decodeModeFromQuery(r)
 
-	decoded := r.URL.Query().Get("decoded") == "true"
+	// Additive SEP-41 normalization on the single-event path; non-matches
+	// simply omit the field, and ?decoded=false skips it entirely.
+	if mode.sep41() {
+		event.WithSEP41()
+	}
+
+	decoded := mode.enrich()
 	includeXDR := r.URL.Query().Get("include_xdr") == "true"
 	if decoded && s.enricher != nil {
 
