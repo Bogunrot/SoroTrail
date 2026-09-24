@@ -210,7 +210,7 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 			return
 		}
 		if err != nil {
-			s.log.Error("looking up api key", "error", err)
+			loggerFromContext(r.Context()).Error("looking up api key", "error", err)
 			writeError(w, http.StatusInternalServerError, errors.New("authentication failed"))
 			return
 		}
@@ -231,14 +231,14 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 
 		scope, err := s.tenants.ScopeForTenant(r.Context(), tenant)
 		if err != nil {
-			s.log.Error("resolving tenant scope", "tenant", tenant.ID, "error", err)
+			loggerFromContext(r.Context()).Error("resolving tenant scope", "tenant", tenant.ID, "error", err)
 			writeError(w, http.StatusInternalServerError, errors.New("authentication failed"))
 			return
 		}
 
 		// Advisory; a failure here must not deny an otherwise valid request.
 		if err := s.tenants.TouchAPIKey(r.Context(), key.ID); err != nil {
-			s.log.Debug("recording api key use", "key", key.ID, "error", err)
+			loggerFromContext(r.Context()).Debug("recording api key use", "key", key.ID, "error", err)
 		}
 
 		ctx := WithPrincipal(r.Context(), Principal{

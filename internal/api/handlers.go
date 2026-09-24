@@ -1690,7 +1690,7 @@ func (s *Server) handleListWatchedChains(w http.ResponseWriter, r *http.Request)
 
 	if err != nil {
 
-		s.log.Error("listing watched contracts", "error", err)
+		loggerFromContext(r.Context()).Error("listing watched contracts", "error", err)
 
 		writeError(w, http.StatusInternalServerError, errors.New("loading watched contracts failed"))
 
@@ -1732,7 +1732,7 @@ func (s *Server) handleAddWatchedChain(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 
-		s.log.Error("listing watched contracts for add", "error", err)
+		loggerFromContext(r.Context()).Error("listing watched contracts for add", "error", err)
 
 		writeError(w, http.StatusInternalServerError, errors.New("loading watched contracts failed"))
 
@@ -1763,7 +1763,7 @@ func (s *Server) handleAddWatchedChain(w http.ResponseWriter, r *http.Request) {
 	state, err := s.store.GetIngestionState(r.Context())
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
 
-		s.log.Error("loading ingestion state for add", "error", err)
+		loggerFromContext(r.Context()).Error("loading ingestion state for add", "error", err)
 
 		writeError(w, http.StatusInternalServerError, errors.New("loading ingestion state failed"))
 
@@ -1773,7 +1773,7 @@ func (s *Server) handleAddWatchedChain(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.store.AddWatchedContract(r.Context(), req.ContractID); err != nil {
 
-		s.log.Error("adding watched contract", "contract_id", req.ContractID, "error", err)
+		loggerFromContext(r.Context()).Error("adding watched contract", "contract_id", req.ContractID, "error", err)
 
 		writeError(w, http.StatusInternalServerError, errors.New("adding watched contract failed"))
 
@@ -1833,7 +1833,7 @@ func (s *Server) handleRemoveWatchedChain(w http.ResponseWriter, r *http.Request
 
 	if err != nil {
 
-		s.log.Error("listing watched contracts for remove", "error", err)
+		loggerFromContext(r.Context()).Error("listing watched contracts for remove", "error", err)
 
 		writeError(w, http.StatusInternalServerError, errors.New("loading watched contracts failed"))
 
@@ -1871,7 +1871,7 @@ func (s *Server) handleRemoveWatchedChain(w http.ResponseWriter, r *http.Request
 
 		}
 
-		s.log.Error("removing watched contract", "contract_id", id, "error", err)
+		loggerFromContext(r.Context()).Error("removing watched contract", "contract_id", id, "error", err)
 
 		writeError(w, http.StatusInternalServerError, errors.New("removing watched contract failed"))
 
@@ -2685,7 +2685,7 @@ func (s *Server) syncStreamScope(ctx context.Context, sub *broadcast.Subscriptio
 					// database error: it was correct as of the last
 					// successful resolve, and widening or narrowing on a
 					// failed read would be guessing.
-					s.log.Warn("refreshing stream scope", "tenant", p.Tenant.ID, "error", err)
+					loggerFromContext(ctx).Warn("refreshing stream scope", "tenant", p.Tenant.ID, "error", err)
 					continue
 				}
 				if !tenant.Enabled {
@@ -2694,7 +2694,7 @@ func (s *Server) syncStreamScope(ctx context.Context, sub *broadcast.Subscriptio
 				}
 				scope, err := s.tenants.ScopeForTenant(ctx, tenant)
 				if err != nil {
-					s.log.Warn("refreshing stream scope", "tenant", p.Tenant.ID, "error", err)
+					loggerFromContext(ctx).Warn("refreshing stream scope", "tenant", p.Tenant.ID, "error", err)
 					continue
 				}
 				sub.SetScope(scope)
