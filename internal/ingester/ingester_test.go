@@ -899,6 +899,8 @@ func TestSkipContracts(t *testing.T) {
 	_, hasEv2 := st.events["e2"]
 	assert.False(t, hasEv1, "event from skipped contract should not be persisted")
 	assert.True(t, hasEv2, "event from non-skipped contract should be persisted")
+}
+
 func TestPersistEvents_DeduplicatesEventIDs(t *testing.T) {
 	tests := []struct {
 		name         string

@@ -436,7 +436,6 @@ func (ing *Ingester) WithTracer(t trace.Tracer) *Ingester {
 		ing.tracer = t
 	}
 	return ing
->>>>>>> upstream/main
 }
 
 // WithBroadcaster attaches a live event broadcaster so ingested events are
