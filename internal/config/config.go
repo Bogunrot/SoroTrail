@@ -19,6 +19,7 @@ type Config struct {
 	PollInterval          time.Duration `env:"POLL_INTERVAL" envDefault:"5s"`
 	HTTPAddr              string        `env:"HTTP_ADDR" envDefault:":8080"`
 	WatchedContracts      []string      `env:"WATCHED_CONTRACTS"`
+	SkipContracts         []string      `env:"SKIP_CONTRACTS"`
 	StartLedger           uint32        `env:"START_LEDGER"`
 	RetentionLedgers      uint32        `env:"RETENTION_LEDGERS" envDefault:"17280"`
 	PartitionLedgerSpan   uint32        `env:"PARTITION_LEDGER_SPAN" envDefault:"120960"`
@@ -203,6 +204,7 @@ func Load() (Config, error) {
 	}
 	// env/v11 splits on "," but keeps empty entries and whitespace.
 	cfg.WatchedContracts = cleanContractList(cfg.WatchedContracts)
+	cfg.SkipContracts = cleanContractList(cfg.SkipContracts)
 	if err := cfg.Validate(); err != nil {
 		return Config{}, err
 	}
@@ -249,6 +251,11 @@ func (c Config) Validate() error {
 	for _, id := range c.WatchedContracts {
 		if !ValidContractID(id) {
 			return fmt.Errorf("WATCHED_CONTRACTS entry %q is not a valid contract ID (want C... strkey, 56 chars)", id)
+		}
+	}
+	for _, id := range c.SkipContracts {
+		if !ValidContractID(id) {
+			return fmt.Errorf("SKIP_CONTRACTS entry %q is not a valid contract ID (want C... strkey, 56 chars)", id)
 		}
 	}
 	if c.AuditPollInterval <= 0 {
@@ -437,6 +444,7 @@ func (c Config) LoggableFields() []any {
 		"poll_interval", c.PollInterval,
 		"http_addr", c.HTTPAddr,
 		"watched_contracts", len(c.WatchedContracts),
+		"skip_contracts", len(c.SkipContracts),
 		"start_ledger", c.StartLedger,
 		"retention_ledgers", c.RetentionLedgers,
 		"log_level", c.LogLevel,

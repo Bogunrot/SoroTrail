@@ -73,6 +73,9 @@ type Options struct {
 	// values mean replays-of-truth are caught faster at the cost of
 	// extra RPC requests per idle cycle.
 	ReorgRescanInterval time.Duration
+	// SkipContracts is a denylist of contract IDs whose events are dropped
+	// before insertion.
+	SkipContracts []string
 }
 
 // LagMetrics is the optional sink for ingest-lag signals. The Ingester
@@ -158,13 +161,19 @@ type Ingester struct {
 	// a poison event no longer stalls the loop. nil means no
 	// dead-lettering — the cycle aborts on the first error as before.
 	deadLetterStore DeadLetterSink
+	// skipContracts is the denylist map built from opts.SkipContracts for O(1) filtering.
+	skipContracts map[string]bool
 }
 
 // New wires an Ingester. All dependencies are interfaces so tests can supply
 // mocks.
 func New(client rpc.Client, st store.Store, dec decode.Decoder, log *slog.Logger, opts Options) *Ingester {
 	opts.applyDefaults()
-	return &Ingester{client: client, store: st, decoder: dec, log: log, opts: opts}
+	skipMap := make(map[string]bool, len(opts.SkipContracts))
+	for _, id := range opts.SkipContracts {
+		skipMap[id] = true
+	}
+	return &Ingester{client: client, store: st, decoder: dec, log: log, opts: opts, skipContracts: skipMap}
 }
 
 // WithBroadcaster attaches a live event broadcaster so ingested events are
@@ -604,6 +613,9 @@ func (ing *Ingester) persistEvents(ctx context.Context, rpcEvents []rpc.Event, l
 	}
 	events := make([]store.Event, 0, len(rpcEvents))
 	for _, re := range rpcEvents {
+		if ing.skipContracts[re.ContractID] {
+			continue
+		}
 		ev, err := ing.toStoreEvent(re)
 		if err != nil {
 			// Issue #131: a poison event must not stall the cycle. If a
